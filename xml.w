@@ -1,40 +1,30 @@
-@ xml
-
+@*XML.
+gjobread.c : a small test program for gnome jobs XML format |Daniel.Veillard@w3.org|
 @c
-@ xml
-
-@c
-/*
- * gjobread.c : a small test program for gnome jobs XML format
- *
- * See Copyright for the status of this software.
- *
- * |Daniel.Veillard@w3.org|
- */
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
+@
+This example should compile and run indifferently with libxml-1.8.8 +
+and libxml2-2.1.0 +
+Check the COMPAT comments below
 
-/*
- * This example should compile and run indifferently with libxml-1.8.8 +
- * and libxml2-2.1.0 +
- * Check the COMPAT comments below
- */
-
-/*
- * COMPAT using xml-config --cflags to get the include path this will
- * work with both 
- */
+COMPAT using xml-config --cflags to get the include path this will
+work with both 
+@f xmlChar      int
+@f xmlDocPtr    int
+@f xmlNsPtr     int
+@f xmlNodePtr   int
+@c
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
 
 #define DEBUG(x) printf(x)
-
-/*
- * A person record
- * an xmlChar * is really an UTF8 encoded char string (0 terminated)
- */
+@
+A person record
+an |xmlChar *| is really an UTF8 encoded char string (0 terminated)
+@c
 typedef struct person {
     xmlChar *name;
     xmlChar *email;
@@ -44,12 +34,10 @@ typedef struct person {
     xmlChar *webPage;
     xmlChar *phone;
 } person, *personPtr;
-
-/*
- * And the code needed to parse it
- */
-static personPtr
-parsePerson(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur) {
+@
+And the code needed to parse it
+@c
+static personPtr parsePerson(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur) {
     personPtr ret = NULL;
 
 DEBUG("parsePerson\n");
@@ -78,12 +66,10 @@ DEBUG("parsePerson\n");
 
     return(ret);
 }
-
-/*
- * and to print it
- */
-static void
-printPerson(personPtr cur) {
+@
+and to print it
+@c
+static void printPerson(personPtr cur) {
     if (cur == NULL) return;
     printf("------ Person\n");
     if (cur->name) printf(" name: %s\n", cur->name);
@@ -95,10 +81,9 @@ printPerson(personPtr cur) {
     if (cur->phone) printf("    phone: %s\n", cur->phone);
     printf("------\n");
 }
-
-/*
- * a Description for a Job
- */
+@
+a Description for a Job
+@c
 typedef struct job {
     xmlChar *projectID;
     xmlChar *application;
@@ -107,12 +92,10 @@ typedef struct job {
     int nbDevelopers;
     personPtr developers[100]; /* using dynamic alloc is left as an exercise */
 } job, *jobPtr;
-
-/*
- * And the code needed to parse it
- */
-static jobPtr
-parseJob(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur) {
+@
+And the code needed to parse it
+@c
+static jobPtr parseJob(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur) {
     jobPtr ret = NULL;
 
 DEBUG("parseJob\n");
@@ -137,28 +120,26 @@ DEBUG("parseJob\n");
         fprintf(stderr, "Project has no ID\n");
         }
     }
-        if ((!xmlStrcmp(cur->name, (const xmlChar *) "Application")) &&
-            (cur->ns == ns))
-        ret->application = 
-        xmlNodeListGetString(doc, cur->xmlChildrenNode, 1);
-        if ((!xmlStrcmp(cur->name, (const xmlChar *) "Category")) &&
+    if ((!xmlStrcmp(cur->name, (const xmlChar *) "Application")) &&
         (cur->ns == ns))
-        ret->category =
-        xmlNodeListGetString(doc, cur->xmlChildrenNode, 1);
-        if ((!xmlStrcmp(cur->name, (const xmlChar *) "Contact")) &&
-        (cur->ns == ns))
-        ret->contact = parsePerson(doc, ns, cur);
+    ret->application = 
+    xmlNodeListGetString(doc, cur->xmlChildrenNode, 1);
+    if ((!xmlStrcmp(cur->name, (const xmlChar *) "Category")) &&
+    (cur->ns == ns))
+    ret->category =
+    xmlNodeListGetString(doc, cur->xmlChildrenNode, 1);
+    if ((!xmlStrcmp(cur->name, (const xmlChar *) "Contact")) &&
+    (cur->ns == ns))
+    ret->contact = parsePerson(doc, ns, cur);
     cur = cur->next;
     }
 
     return(ret);
 }
-
-/*
- * and to print it
- */
-static void
-printJob(jobPtr cur) {
+@
+and to print it
+@c
+static void printJob(jobPtr cur) {
     int i;
 
     if (cur == NULL) return;
@@ -172,107 +153,117 @@ printJob(jobPtr cur) {
     for (i = 0;i < cur->nbDevelopers;i++) printPerson(cur->developers[i]);
     printf("======= \n");
 }
-
-/*
- * A pool of Gnome Jobs
- */
+@
+A pool of Gnome Jobs
+@c
 typedef struct gjob {
     int nbJobs;
     jobPtr jobs[500]; /* using dynamic alloc is left as an exercise */
 } gJob, *gJobPtr;
 
-
-static gJobPtr
-parseGjobFile(char *filename ATTRIBUTE_UNUSED) {
+@ handle root element as boolean function returning the value in the first parameter.
+This way one can cascade the function into a sequence of |&&| symbols.
+@c
+static bool readRoot(xmlNodePtr*cur, xmlDocPtr doc){
+    *cur = xmlDocGetRootElement(doc);
+    if (*cur == NULL) {
+        fprintf(stderr,"empty document\n");
+        xmlFreeDoc(doc);
+        return false;
+    }
+    else
+        return true;
+}
+@
+@c
+static bool checkNamespace(xmlNsPtr *ns, xmlDocPtr doc,xmlNodePtr cur){
+    *ns = xmlSearchNsByHref(doc, cur,
+            (const xmlChar *) "http://www.gnome.org/some-location");
+    if (*ns == NULL) {
+        fprintf(stderr,
+                "document of the wrong type, GJob Namespace not found\n");
+        xmlFreeDoc(doc);
+        return false;
+    }
+    else 
+        return true;
+}
+@
+@c
+static gJobPtr parseGjobFile(char *filename) {
     xmlDocPtr doc;
     gJobPtr ret;
     jobPtr curjob;
     xmlNsPtr ns;
     xmlNodePtr cur;
 
-    /*
-     * build an XML tree from a the file;
-     */
-    doc = xmlParseFile(filename);
+
+    doc = xmlParseFile(filename);     /* build an XML tree from a the file */
     if (doc == NULL) return(NULL);
 
-    /*
-     * Check the document is of the right kind
-     */
     
-    cur = xmlDocGetRootElement(doc);
-    if (cur == NULL) {
-        fprintf(stderr,"empty document\n");
-    xmlFreeDoc(doc);
-    return(NULL);
-    }
-    ns = xmlSearchNsByHref(doc, cur,
-        (const xmlChar *) "http://www.gnome.org/some-location");
-    if (ns == NULL) {
-        fprintf(stderr,
-            "document of the wrong type, GJob Namespace not found\n");
-    xmlFreeDoc(doc);
-    return(NULL);
-    }
-    if (xmlStrcmp(cur->name, (const xmlChar *) "Helping")) {
-        fprintf(stderr,"document of the wrong type, root node != Helping");
-    xmlFreeDoc(doc);
-    return(NULL);
-    }
+    if(readRoot(&cur, doc)
+            && checkNamespace(&ns, doc, cur)){ /* Check the document is of the right kind */
+        if (xmlStrcmp(cur->name, (const xmlChar *) "Helping")) {
+            fprintf(stderr,"document of the wrong type, root node != Helping");
+        xmlFreeDoc(doc);
+        return(NULL);
+        }
 
-    /*
-     * Allocate the structure to be returned.
-     */
-    ret = (gJobPtr) malloc(sizeof(gJob));
-    if (ret == NULL) {
-        fprintf(stderr,"out of memory\n");
-    xmlFreeDoc(doc);
-    return(NULL);
-    }
-    memset(ret, 0, sizeof(gJob));
+        
+        ret = (gJobPtr) malloc(sizeof(gJob)); /* Allocate the structure to be returned.  */
+        if (ret == NULL) {
+            fprintf(stderr,"out of memory\n");
+        xmlFreeDoc(doc);
+        return(NULL);
+        }
+        memset(ret, 0, sizeof(gJob));
 
-    /*
-     * Now, walk the tree.
-     */
-    /* First level we expect just Jobs */
-    cur = cur->xmlChildrenNode;
-    while ( cur && xmlIsBlankNode ( cur ) ) {
-    cur = cur -> next;
-    }
-    if ( cur == 0 ) {
-    xmlFreeDoc(doc);
-    free(ret);
-    return ( NULL );
-    }
-    if ((xmlStrcmp(cur->name, (const xmlChar *) "Jobs")) || (cur->ns != ns)) {
-        fprintf(stderr,"document of the wrong type, was '%s', Jobs expected",
-        cur->name);
-    fprintf(stderr,"xmlDocDump follows\n");
-    xmlDocDump ( stderr, doc );
-    fprintf(stderr,"xmlDocDump finished\n");
-    xmlFreeDoc(doc);
-    free(ret);
-    return(NULL);
-    }
+        /*
+        * Now, walk the tree.
+        */
+        /* First level we expect just Jobs */
+        cur = cur->xmlChildrenNode;
+        while ( cur && xmlIsBlankNode ( cur ) ) {
+        cur = cur -> next;
+        }
+        if ( cur == 0 ) {
+        xmlFreeDoc(doc);
+        free(ret);
+        return ( NULL );
+        }
+        if ((xmlStrcmp(cur->name, (const xmlChar *) "Jobs")) || (cur->ns != ns)) {
+            fprintf(stderr,"document of the wrong type, was '%s', Jobs expected",
+            cur->name);
+        fprintf(stderr,"xmlDocDump follows\n");
+        xmlDocDump ( stderr, doc );
+        fprintf(stderr,"xmlDocDump finished\n");
+        xmlFreeDoc(doc);
+        free(ret);
+        return(NULL);
+        }
 
-    /* Second level is a list of Job, but be laxist */
-    cur = cur->xmlChildrenNode;
-    while (cur != NULL) {
-        if ((!xmlStrcmp(cur->name, (const xmlChar *) "Job")) &&
-        (cur->ns == ns)) {
-        curjob = parseJob(doc, ns, cur);
-        if (curjob != NULL)
-            ret->jobs[ret->nbJobs++] = curjob;
-            if (ret->nbJobs >= 500) break;
-    }
-    cur = cur->next;
-    }
+        /* Second level is a list of Job, but be laxist */
+        cur = cur->xmlChildrenNode;
+        while (cur != NULL) {
+            if ((!xmlStrcmp(cur->name, (const xmlChar *) "Job")) &&
+            (cur->ns == ns)) {
+            curjob = parseJob(doc, ns, cur);
+            if (curjob != NULL)
+                ret->jobs[ret->nbJobs++] = curjob;
+                if (ret->nbJobs >= 500) break;
+        }
+        cur = cur->next;
+        }
 
-    return(ret);
+        return(ret);
+    }
+    else
+        return NULL;
 }
-
-static void
-handleGjob(gJobPtr cur) {
+@
+@c
+static void handleGjob(gJobPtr cur) {
     int i;
 
     /*
@@ -281,7 +272,8 @@ handleGjob(gJobPtr cur) {
     printf("%d Jobs registered\n", cur->nbJobs);
     for (i = 0; i < cur->nbJobs; i++) printJob(cur->jobs[i]);
 }
-
+@
+@c
 int main(int argc, char **argv) {
     int i;
     gJobPtr cur;
@@ -311,6 +303,10 @@ int main(int argc, char **argv) {
 @(dummy.c@>=
 // dummy file
 
-void dummy(){
+#define XPUBLIC
+
+XPUBLIC void dummy(){
 
 }
+
+@*Index.

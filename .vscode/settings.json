@@ -1,0 +1,12 @@
+{
+    "cmake.configureArgs": [
+        "-DLIBXML2_LIBRARY=C:\\w\\git\\libxml2-win-build\\build-VS2019\\x64\\Debug\\libxml2-static.lib",
+        "-DCMAKE_SYSTEM_VERSION=10.0",
+        "-DLIBXML2_INCLUDE_DIR=C:\\w\\git\\libxml2-win-build\\include",
+        "-DICONV_INCLUDE=C:\\w\\git\\libiconv-win-build\\include",
+        "-DICONV_LIBRARY=C:\\w\\git\\libiconv-win-build\\build-VS2019\\x64\\Debug\\libiconv-static.lib",
+        "-DZLIB_INCLUDE=C:\\w\\git\\zlib-win-build",
+        "-DZLIB_LIBRARY=C:\\w\\git\\zlib-win-build\\build-VS2019\\x64\\Debug\\libz-static.lib"
+    ],
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+}

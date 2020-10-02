@@ -3,7 +3,7 @@ cmake_minimum_required( VERSION 2.8 )
 project(xml)
 find_package( LibXml2 )
 
-include_directories( include ${LIBXML2_INCLUDE_DIR} )
+include_directories( include ${LIBXML2_INCLUDE_DIR} ${ZLIB_INCLUDE} ${ICONV_INCLUDE} )
 add_definitions(-DBUILDNO="TEST")
 
 ## Install the executable to <install_directory>/bin
@@ -16,20 +16,21 @@ file(GLOB WEB xml.w)
 set(TEX xml.tex)
 set(EXE run_xml)
 set(PDF xml.pdf)
+set(CHG ${CMAKE_HOST_SYSTEM_NAME}.ch)
 
 list(APPEND SOURCES ${CMAKE_CURRENT_BINARY_DIR}/dummy.c  )
 
 add_library(xml SHARED ${SOURCES})
 add_executable( ${EXE} xml.c )
-target_link_libraries( ${EXE} PUBLIC xml ${LIBXML2_LIBRARY} )
+target_link_libraries( ${EXE} PUBLIC xml ${LIBXML2_LIBRARY} ${ICONV_LIBRARY} ${ZLIB_LIBRARY} ws2_32 )
 # target_link_libraries( ${EXE} xml2 )
 install( TARGETS ${EXE} RUNTIME DESTINATION bin )
 
 add_custom_command( OUTPUT ${SOURCES} xml.c
-                    COMMAND ctangle ${WEB}
+                    COMMAND ctangle ${WEB} ${CHG}
                     DEPENDS ${WEB} )
 add_custom_command( OUTPUT ${TEX} 
-                    COMMAND cweave ${WEB}
+                    COMMAND cweave ${WEB} ${CHG}
                     DEPENDS ${WEB})
 add_custom_command( OUTPUT ${PDF} 
                     COMMAND pdftex ${TEX} 
