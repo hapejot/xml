@@ -1,3 +1,14 @@
+@*Std Xml Definitions.
+
+@<includes@>=
+#include <stdio.h>
+#include <string.h>
+#include <libxml/parser.h>
+#include <libxml/tree.h>
+#include <libxml/xinclude.h>
+#include <libxml/xmlIO.h>
+#include <assert.h>
+
 @*XML.
 gjobread.c : a small test program for gnome jobs XML format |Daniel.Veillard@w3.org|
 @c
@@ -1533,19 +1544,10 @@ int main(void) {
 
     xmlDocDump(stdout, doc);
 
-    /*
-     * Free the document
-     */
-    xmlFreeDoc(doc);
-
-    /*
-     * Cleanup function for the XML library.
-     */
-    xmlCleanupParser();
-    /*
-     * this is to debug memory for regression tests
-     */
     xmlMemoryDump();
+
+    xmlFreeDoc(doc);
+    xmlCleanupParser();
     return(0);
 }
 
@@ -1565,9 +1567,9 @@ main(void)
     /*
      * Create the document.
      */
-    doc = xmlNewDoc(BAD_CAST "1.0");
-    n = xmlNewNode(NULL, BAD_CAST "root");
-    xmlNodeSetContent(n, BAD_CAST "content");
+    doc = xmlNewDoc("1.0");
+    n = xmlNewNode(NULL, "root");
+    xmlNodeSetContent(n, "content");
     xmlDocSetRootElement(doc, n);
 
     /*
@@ -1586,5 +1588,42 @@ main(void)
     return (0);
 }
 
+@*Build Document and save.
+
+@(mkxml.c@>=
+@<includes@>;
+int
+main(void)
+{
+    xmlNodePtr n; // node
+    xmlDocPtr doc;
+    xmlNodePtr c; // child
+
+    assert( xmlIndentTreeOutput == 1 );
+    assert( strcmp( xmlTreeIndentString, "  ") == 0 );
+    // |xmlKeepBlanksDefault(0);| will not be used, it makes no difference right now.
+
+    doc = xmlNewDoc("1.0");
+    n = xmlNewNode(NULL, "root");
+    xmlDocSetRootElement(doc, n);
+    xmlNodeSetContent(n, "content");
+
+    c = xmlNewNode(NULL, "child1");
+    xmlAddChild(n, c);
+    xmlNodeSetContent(c, "the child is here");
+
+    c = xmlNewNode(NULL, "child2");
+    xmlAddChild(n, c);
+    xmlNodeSetContent(c, "the second chöld is here");
+
+    int format = 1; // do formatting
+    // |const char encoding[] = "ISO-8859-1";|
+    const char encoding[] = "UTF-8";
+    xmlSaveFormatFileEnc("-", doc, encoding, format);
+
+    xmlFreeDoc(doc);
+    xmlMemoryDump();
+    return (0);
+} 
 
 @*Index.

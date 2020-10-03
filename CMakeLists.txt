@@ -18,32 +18,38 @@ set(TEX xml.tex)
 set(EXE run_xml)
 set(PDF xml.pdf)
 
-if($<STREQUAL:${CMAKE_HOST_SYSTEM_NAME},Windows>)
-list(APPEND LIBS ws2_32)
+if(WIN32)
+    list(APPEND LIBS ws2_32)
 endif()
-
+list(APPEND LIBS ${LIBXML2_LIBRARY} )
+list(APPEND LIBS ${ICONV_LIBRARY} )
+list(APPEND LIBS ${ZLIB_LIBRARY} )
 list(APPEND SOURCES ${CMAKE_CURRENT_BINARY_DIR}/dummy.c  )
 
 add_library(xml SHARED ${SOURCES})
 add_executable( ${EXE} xml.c )
-target_link_libraries( ${EXE} PUBLIC xml    ${LIBXML2_LIBRARY} 
-                                            ${ICONV_LIBRARY} 
-                                            ${ZLIB_LIBRARY} ${LIBS} )
+target_link_libraries( ${EXE} PRIVATE xml ${LIBS} )
 install( TARGETS ${EXE} RUNTIME DESTINATION bin )
 
 add_executable( xmlwriter testWriter.c )
-target_link_libraries( xmlwriter PUBLIC xml ${LIBXML2_LIBRARY} 
-                                            ${ICONV_LIBRARY} 
-                                            ${ZLIB_LIBRARY} ${LIBS} )
+target_link_libraries( xmlwriter PRIVATE xml  ${LIBS} )
 install( TARGETS xmlwriter RUNTIME DESTINATION bin )
 
 add_executable( io2 io2.c )
-target_link_libraries( io2 PUBLIC xml ${LIBXML2_LIBRARY} ${ICONV_LIBRARY} ${ZLIB_LIBRARY} ${LIBS} )
+target_link_libraries( io2 PRIVATE xml ${LIBS} )
 install( TARGETS io2 RUNTIME DESTINATION bin )
 
 add_executable( io1 io1.c )
-target_link_libraries( io1 PUBLIC xml ${LIBXML2_LIBRARY} ${ICONV_LIBRARY} ${ZLIB_LIBRARY} ${LIBS} )
+target_link_libraries( io1 PRIVATE xml  ${LIBS} )
 install( TARGETS io1 RUNTIME DESTINATION bin )
+if(WIN32)
+    target_compile_definitions(io1 PRIVATE _CRT_SECURE_NO_WARNINGS )
+endif()
+
+add_executable( mkxml mkxml.c )
+target_link_libraries( mkxml PRIVATE xml  ${LIBS} )
+install( TARGETS mkxml RUNTIME DESTINATION bin )
+
 
 add_custom_command( OUTPUT ${SOURCES} xml.c io1.c io2.c testWriter.c
                     COMMAND ctangle ${WEB} ${CHG}
